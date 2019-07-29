@@ -49,9 +49,11 @@ test_du_used_to_total_ratio{desc="store for .node_modules/",path="/ws/ashok",use
 ```
 
 # Docker
+* Image: ashok-an/prom-fs-monitor (dockerhub)
+
 ```
 # usage
-$ docker run prom-du-monitor -h                                                                   nashok@NASHOK-M-F1YV
+$ docker run ashok-an/prom-fs-monitor -h                                                                   
 usage: main.py [-h] [-a {sample-config,check-config,run}] [-c CONFIG]
                [-mp METRIC_PREFIX]
 
