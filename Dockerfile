@@ -7,5 +7,8 @@ ADD requirements.txt /
 
 RUN pip install -r requirements.txt
 
+ENV HTTP_PORT 19090
+EXPOSE ${HTTP_PORT}
+
 ENTRYPOINT ["python", "main.py"]
 CMD []

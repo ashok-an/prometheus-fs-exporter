@@ -13,7 +13,7 @@ logger = logging.getLogger('prom_fs_util')
 logging.basicConfig(format='%(asctime)s %(levelname)8s: %(message)s')
 logger.setLevel(logging.DEBUG)
 
-DEFAULT_PORT = 19091
+HTTP_PORT = os.environ.get('HTTP_PORT', 19090) 
 SLEEP_INTERVAL_SEC = 30
 
 def die(message, status=1):
@@ -45,10 +45,7 @@ def parse_config_file(filePath):
 
 def validate_config_data(data):
 	output = data
-	if 'port' not in data:
-		logger.error('No value for key:port in input-config; will use {}'.format(DEFAULT_PORT))
-
-	elif 'all_users' not in data:
+	if 'all_users' not in data:
 		die('No value for key:all_users in input-config')
 	elif not data.get('all_users', []):
 		die('Empty list:all_users in input-config')
@@ -103,7 +100,7 @@ def process_valid_configs(data, prefix):
 	totalGauge = PC.Gauge('{}_total_space_gigabytes'.format(prefix), 'Total bytes in the mount-point', ['desc', 'path', 'users'])
 	availGauge = PC.Gauge('{}_avail_space_gigabytes'.format(prefix), 'Total available space in the mount-point', ['desc', 'path', 'users'])
 	usedGauge  = PC.Gauge('{}_used_to_total_ratio'.format(prefix), 'Ratio of used-up space in mount-point', ['desc', 'path', 'users'])
-	PC.start_http_server(int(data.get('port', DEFAULT_PORT)))
+	PC.start_http_server(int(data.get('port', HTTP_PORT)))
 
 	while True:
 		for entry in data.get('valid_path_configs', []):
@@ -147,7 +144,7 @@ if __name__ == '__main__':
 
 	logger.info('Template validation completed; found {} path_configs to monitor'.format(len(configPaths)))
 	print()
-	logger.info('Publishing metrics on http://<host-ip>:{}/metrics ...'.format(data['port']))
+	logger.info('Publishing metrics on http://<host-ip>:{}/metrics ...'.format(HTTP_PORT))
 	while True:
 		process_valid_configs(data, args.metric_prefix)
 		logger.info("sleep {}".format(SLEEP_INTERVAL_SEC))

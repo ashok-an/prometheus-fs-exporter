@@ -49,11 +49,11 @@ test_du_used_to_total_ratio{desc="store for .node_modules/",path="/ws/ashok",use
 ```
 
 # Docker
-* Image: ashok-an/prom-fs-monitor (dockerhub)
+* Image: ashoka007/prom-fs-monitor (dockerhub)
 
 ```
 # usage
-$ docker run ashok-an/prom-fs-monitor -h                                                                   
+$ docker run ashoka007/prom-fs-monitor -h                                                                   
 usage: main.py [-h] [-a {sample-config,check-config,run}] [-c CONFIG]
                [-mp METRIC_PREFIX]
 
@@ -68,7 +68,7 @@ optional arguments:
 $
 
 # print sample config
-$ docker run -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor -a sample-config
+$ docker run -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor -a sample-config
 {
 	"all_users": ["frontend", "backend"],
 	"path_configs" : [
@@ -79,20 +79,20 @@ $ docker run -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor -a sample
 $
 
 # check config.json
-$ docker run -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor -a check-config
+$ docker run -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor -a check-config
 2019-07-29 15:12:18,056     INFO: Input config file:config.json
 2019-07-29 15:12:18,056    ERROR: Found 1 errors in path_config:/nfs/filer - ['Invalid path:/nfs/filer']
 2019-07-29 15:12:18,056    ERROR: Found 1 errors in path_config:/home/user - ['Invalid path:/home/user']
 $
 
 # normal run
-$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor 
+$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor 
 
 # custom prefix
-$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor  -mp test_du
+$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor  -mp test_du
 
 # custom port
-$ docker run -p 29091:29091 -v /tmp/config.json:/config.json -e HTTP_PORT=29091 ashok-an/prom-fs-monitor
+$ docker run -p 29091:29091 -v /tmp/config.json:/config.json -e HTTP_PORT=29091 ashoka007/prom-fs-monitor
 
 ```
 
