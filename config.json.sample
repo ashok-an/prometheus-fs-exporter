@@ -1,0 +1,8 @@
+{
+	"port" : 19091,
+	"all_users": ["frontend", "backend"],
+	"path_configs" : [
+		{ "path": "/nfs/filer", "users": ["frontend", "backend"], "desc": "data store and backup" },
+		{ "path": "/home/user", "users": ["frontend"], "desc": "store for .node_modules/" }
+	]
+}

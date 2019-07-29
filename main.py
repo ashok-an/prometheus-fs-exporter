@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import json
 import logging
 import os
 import shutil
@@ -12,86 +13,78 @@ logger = logging.getLogger('prom_fs_util')
 logging.basicConfig(format='%(asctime)s %(levelname)8s: %(message)s')
 logger.setLevel(logging.DEBUG)
 
+DEFAULT_PORT = 19091
 SLEEP_INTERVAL_SEC = 30
 
-sys.path.append('.')
-import fs_util_config as FS
+def die(message, status=1):
+	logger.critical('{}; exiting with status={}'.format(message, status))
+	sys.exit(status)
+# end
 
-def print_template_and_exit():
-	if os.path.isfile('./fs_util_config.py.sample'):
-		with open('fs_util_config.py.sample') as fd:
+def print_template():
+	sys.path.append('.')
+	try:
+		with open('./config.json.sample') as fd:
 			data = fd.readlines()
-		# with
 		for line in data:
 			sys.stdout.write(line)
-		# for
-	else:
-		logger.critical('Unable to locate fs_util_config.py.sample')
-	# if
-	sys.exit(2)
+	except:
+		die('Unable to locate config.json.sample')
+	# try
 # end
 
-def is_invalid_path_config(entry):
-	isInvalid = False
-	if 'path' not in entry:
-		logger.error('Missing path in path-config:{}'.format(entry))
-		isInvalid = True
-	elif 'users' not in entry:
-		logger.error('Missing users[] in path-config:{}'.format(entry))
-		isInvalid = True
-	elif not os.path.exists(entry.get('path', '/invalid-path')):
-		logger.error('Unreachable path:{} in path-config:{}'.format(entry.get('path', '/invalid-path'), entry))
-		isInvalid = True
-	else:
-		for u in entry.get('users', []):
-			if u not in FS.ALL_USERS:
-				logger.error('Invalid user:{} in path-config:{}'.format(u, entry))
-				isInvalid = True
-				break
-			# if
-		# for
-	# if
-
-	if isInvalid:
-		logger.info('Pruning {} from PATH_CONFIGS[]'.format(entry.get('path', '/invalid-path')))
-	else:
-		logger.info("Config is GOOD: {}".format(entry))
-	# if
-
-	return isInvalid
+def parse_config_file(filePath):
+	data = {}
+	try:
+		with open(filePath, 'r') as fd:
+			data = json.load(fd)
+	except:
+		die('JSON parsing failed for {}'.format(filePath))
+	return data
 # end
 
-def verify_template():
-	isValid = True
-	if not FS.PROMETHEUS_METRICS_PORT:
-		logger.error('PROMETHEUS_METRICS_PORT not defined')
-		isValid = False
-	if not FS.ALL_USERS:
-		logger.error('ALL_USERS not defined')
-		isValid = False
-	if not FS.PATH_CONFIGS:
-		logger.error('PATH_CONFIGS not defined')
-		isValid = False
-	if not len(FS.ALL_USERS):
-		logger.error('ALL_USERS is empty')
-		isValid = False
-	if not len(FS.PATH_CONFIGS):
-		logger.error('PATH_CONFIGS is empty')
-		isValid = False
+def validate_config_data(data):
+	output = data
+	if 'port' not in data:
+		logger.error('No value for key:port in input-config; will use {}'.format(DEFAULT_PORT))
 
-	configErrors = 0
-	validConfigs = []
-	for entry in FS.PATH_CONFIGS:
-		if is_invalid_path_config(entry):
-			configErrors += 1
-		else:
-			validConfigs.append(entry)
-		# if
-	# for
-	if configErrors:
-		logger.error('Found {} path config errors'.format(configErrors))
-	# if
-	return isValid, validConfigs
+	elif 'all_users' not in data:
+		die('No value for key:all_users in input-config')
+	elif not data.get('all_users', []):
+		die('Empty list:all_users in input-config')
+
+	elif 'path_configs' not in data:
+		die('No value for key:path_configs in input-config')
+	elif not data.get('path_configs', []):
+		die('Empty list:path_configs in input-config')
+
+	else:
+		validPathConfigs = []
+		for i in data.get('path_configs', []):
+			errors = []
+			try:
+				path, users, desc = i['path'], i['users'], i['desc']
+				if not os.path.exists(path):
+					errors.append('Invalid path:{}'.format(path))
+				if not desc:
+					error.append('No description for path:{}'.format(path))
+				if not users:
+					error.append('No users for path:{}'.format(path))
+				for u in users:
+					if u not in data['all_users']:
+						errors.append('Invalid user:{} for path:{}'.format(u, path))
+				# for
+				if errors:
+					logger.error('Found {} errors in path_config:{} - {}'.format(len(errors), path, errors))
+				else:
+					validPathConfigs.append(i)
+				# if
+			except:
+				logger.error('Unable to parse path_configs[]')
+		# for
+		output['valid_path_configs'] = validPathConfigs
+	# else
+	return output
 # end
 
 def get_usage(inputPath):
@@ -105,24 +98,24 @@ def get_usage(inputPath):
 	return total, used, avail
 # end
 
-def process_valid_configs(inputConfigs):
+def process_valid_configs(data, prefix):
 	# setup infra
-	totalGauge = PC.Gauge('fs_utils_total_space_gigabytes', 'Total bytes in the mount-point', ['path', 'users'])
-	availGauge = PC.Gauge('fs_utils_avail_space_gigabytes', 'Total available space in the mount-point', ['path', 'users'])
-	usedGauge  = PC.Gauge('fs_utils_used_to_total_ratio', 'Ratio of used-up space in mount-point', ['path', 'users'])
-	PC.start_http_server(int(FS.PROMETHEUS_METRICS_PORT))
+	totalGauge = PC.Gauge('{}_total_space_gigabytes'.format(prefix), 'Total bytes in the mount-point', ['desc', 'path', 'users'])
+	availGauge = PC.Gauge('{}_avail_space_gigabytes'.format(prefix), 'Total available space in the mount-point', ['desc', 'path', 'users'])
+	usedGauge  = PC.Gauge('{}_used_to_total_ratio'.format(prefix), 'Ratio of used-up space in mount-point', ['desc', 'path', 'users'])
+	PC.start_http_server(int(data.get('port', DEFAULT_PORT)))
 
 	while True:
-		for entry in inputConfigs:
-			path, users  = entry['path'], ','.join(sorted(entry['users'])) 
+		for entry in data.get('valid_path_configs', []):
+			path, users, desc  = entry['path'], ','.join(sorted(entry['users'])), entry['desc']
 			total, used, avail = get_usage(path)
 			usedRatio = used / total if total else 1 #to raise alarm
 
-			totalGauge.labels(path=path, users=users).set(total)
-			availGauge.labels(path=path, users=users).set(avail)
-			usedGauge.labels(path=path, users=users).set(usedRatio)
+			totalGauge.labels(desc=desc, path=path, users=users).set(total)
+			availGauge.labels(desc=desc, path=path, users=users).set(avail)
+			usedGauge.labels(desc=desc, path=path, users=users).set(usedRatio)
 
-			logger.info("metric<path={}, total={}, avail={}, usedRatio={}>".format(path, total, avail, usedRatio))
+			logger.info("+ metric<path={}, total={}, avail={}, usedRatio={}>".format(path, total, avail, usedRatio))
 		# for
 		logger.info("sleep {}".format(SLEEP_INTERVAL_SEC))
 		time.sleep(SLEEP_INTERVAL_SEC)
@@ -131,32 +124,32 @@ def process_valid_configs(inputConfigs):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-t', '--template', action='store_true', help='print fs_util_config.py template and exit(2)')
-	parser.add_argument('-v', '--verify', action='store_true', help='verify fs_util_config.py and exit(0)')
+	parser.add_argument('-a', '--action', help='action to be taken, default:run', choices=['sample-config', 'check-config', 'run'], default='run')
+	parser.add_argument('-c', '--config', help='path to config.json (default: ./config.json)', default='config.json')
+	parser.add_argument('-mp', '--metric_prefix', help='prefix for the published metrics (default: fs_util)', default='fs_util')
 	args = parser.parse_args()
 
-	if args.template:
-		print_template_and_exit()
-
-	isTemplateValid, validConfigs = verify_template()
-	if not isTemplateValid:
-		logger.critical('Invalid input configuration; exiting with status=1')
-		sys.exit(1)
-	elif not validConfigs:
-		logger.critical('No valid path-configs found to process; exiting with status=1')
-		sys.exit(1)
-	# if
-
-	logger.info("Verification successful")
-	logger.info("+ Metrics can be queried on: 'http://localhost:{}/metrics'".format(FS.PROMETHEUS_METRICS_PORT))
-	logger.info("+ User list: {}".format(FS.ALL_USERS))
-	logger.info("+ Valid path config count: {}".format(len(validConfigs)))
-
-	if args.verify:
-		logger.info("No processing requested (--verify mode); exiting with status=0")
+	if args.action == 'sample-config':
+		print_template()
 		sys.exit(0)
-	# if
 
-	logger.info("Start monitoring ...")
-	
-	process_valid_configs(validConfigs)
+	inputJson = args.config
+	logger.info('Input config file:{}'.format(inputJson))
+	interim = parse_config_file(inputJson)
+	data = validate_config_data(interim)
+
+	if args.action == 'check-config':
+		sys.exit(0)
+
+	configPaths = data.get('valid_path_configs', [])
+	if not configPaths:
+		die('No valid path_configs to monitor', 2)
+
+	logger.info('Template validation completed; found {} path_configs to monitor'.format(len(configPaths)))
+	print()
+	logger.info('Publishing metrics on http://<host-ip>:{}/metrics ...'.format(data['port']))
+	while True:
+		process_valid_configs(data, args.metric_prefix)
+		logger.info("sleep {}".format(SLEEP_INTERVAL_SEC))
+	# while
+# end
