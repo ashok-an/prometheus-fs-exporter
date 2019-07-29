@@ -56,6 +56,7 @@ TODO
 * Data is exposed on *19091* by default
 * It can be queried on *http://<ip-addr>:$PROMETHEUS_METRICS_PORT/metrics*
 * There is a 30sec delay b/n the subsequent checks
-  
+
+
 ### Q. Why .json, why not .yaml?
 A. Not comfortable with .yaml
