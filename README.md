@@ -66,7 +66,7 @@ optional arguments:
 $
 
 # print sample config
-$ docker run -v /tmp/config.json:/config.json prom-du-monitor -a sample-config
+$ docker run -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor -a sample-config
 {
 	"all_users": ["frontend", "backend"],
 	"path_configs" : [
@@ -77,20 +77,20 @@ $ docker run -v /tmp/config.json:/config.json prom-du-monitor -a sample-config
 $
 
 # check config.json
-$ docker run -v /tmp/config.json:/config.json prom-du-monitor -a check-config
+$ docker run -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor -a check-config
 2019-07-29 15:12:18,056     INFO: Input config file:config.json
 2019-07-29 15:12:18,056    ERROR: Found 1 errors in path_config:/nfs/filer - ['Invalid path:/nfs/filer']
 2019-07-29 15:12:18,056    ERROR: Found 1 errors in path_config:/home/user - ['Invalid path:/home/user']
 $
 
 # normal run
-$ docker run -p 19091:19091 -v /tmp/config.json:/config.json prom-du-monitor
+$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor 
 
 # custom prefix
-$ docker run -p 19091:19091 -v /tmp/config.json:/config.json prom-du-monitor -mp test_du
+$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashok-an/prom-fs-monitor  -mp test_du
 
 # custom port
-$ docker run -p 29091:29091 -v /tmp/config.json:/config.json -e HTTP_PORT=29091 prom-du-monitor
+$ docker run -p 29091:29091 -v /tmp/config.json:/config.json -e HTTP_PORT=29091 ashok-an/prom-fs-monitor
 
 ```
 
