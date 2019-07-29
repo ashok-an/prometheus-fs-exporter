@@ -48,7 +48,8 @@ test_du_used_to_total_ratio{desc="store for .node_modules/",path="/home/ashok",u
 test_du_used_to_total_ratio{desc="store for .node_modules/",path="/ws/ashok",users="frontend"} 0.3875875473022461
 ```
 
-# Docker
+# Docker (TODO)
+#### ![#f03c15](https://placehold.it/15/f03c15/000000?text=+)  Does not work as mounts are not reflected inside the container
 * Image: ashoka007/prom-fs-monitor (dockerhub)
 
 ```
