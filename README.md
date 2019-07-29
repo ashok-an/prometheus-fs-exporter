@@ -48,55 +48,6 @@ test_du_used_to_total_ratio{desc="store for .node_modules/",path="/home/ashok",u
 test_du_used_to_total_ratio{desc="store for .node_modules/",path="/ws/ashok",users="frontend"} 0.3875875473022461
 ```
 
-# Docker (TODO)
-#### ![#f03c15](https://placehold.it/15/f03c15/000000?text=+)  Does not work as mounts are not reflected inside the container
-* Image: ashoka007/prom-fs-monitor (dockerhub)
-
-```
-# usage
-$ docker run ashoka007/prom-fs-monitor -h                                                                   
-usage: main.py [-h] [-a {sample-config,check-config,run}] [-c CONFIG]
-               [-mp METRIC_PREFIX]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -a {sample-config,check-config,run}, --action {sample-config,check-config,run}
-                        action to be taken, default:run
-  -c CONFIG, --config CONFIG
-                        path to config.json (default: ./config.json)
-  -mp METRIC_PREFIX, --metric_prefix METRIC_PREFIX
-                        prefix for the published metrics (default: fs_util)
-$
-
-# print sample config
-$ docker run -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor -a sample-config
-{
-	"all_users": ["frontend", "backend"],
-	"path_configs" : [
-		{ "path": "/nfs/filer", "users": ["frontend", "backend"], "desc": "data store and backup" },
-		{ "path": "/home/user", "users": ["frontend"], "desc": "store for .node_modules/" }
-	]
-}
-$
-
-# check config.json
-$ docker run -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor -a check-config
-2019-07-29 15:12:18,056     INFO: Input config file:config.json
-2019-07-29 15:12:18,056    ERROR: Found 1 errors in path_config:/nfs/filer - ['Invalid path:/nfs/filer']
-2019-07-29 15:12:18,056    ERROR: Found 1 errors in path_config:/home/user - ['Invalid path:/home/user']
-$
-
-# normal run
-$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor 
-
-# custom prefix
-$ docker run -p 19091:19091 -v /tmp/config.json:/config.json ashoka007/prom-fs-monitor  -mp test_du
-
-# custom port
-$ docker run -p 29091:29091 -v /tmp/config.json:/config.json -e HTTP_PORT=29091 ashoka007/prom-fs-monitor
-
-```
-
 # Notes
 * If an accepted path is not available, it's values are reported as *0*
 * Data is exposed on *19091* by default
